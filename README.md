@@ -1,4 +1,4 @@
-# 🔱 Security Architecture Portfolio — Abhishek Gowda
+# 🔱 Security Architecture Portfolio — Abhishek
 
 Welcome to my **Security Architecture God-Tier Training Repository** — a 6-month structured learning and implementation plan to master **Cloud & Security Architecture**.
 
