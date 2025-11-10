@@ -22,11 +22,13 @@ Organization: my-org
 │ ├── Project: chronos-prod
 │ └── Project: prod-infra
 │
+
 ├── Folder: Staging
 │ ├── Project: reaper-stage
 │ ├── Project: chronos-stage
 │ └── Project: stage-infra
 │
+
 └── Folder: Shared-Services
 ├── Project: networking
 ├── Project: monitoring
