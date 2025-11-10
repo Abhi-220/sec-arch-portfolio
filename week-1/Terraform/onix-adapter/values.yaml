@@ -1,0 +1,93 @@
+# Default values for onix-adapter.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: "asia-south1-docker.pkg.dev/trusty-relic-370809/onix-adapter-beta/adapter" # Updated to Onix Adapter repository
+  pullPolicy: IfNotPresent
+  tag: "latest"  # Using latest tag, can be overridden
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Service account configuration
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""  # Will be dynamically set by Terraform
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+# Service configuration
+service:
+  type: LoadBalancer  # Updated to LoadBalancer, can be overridden
+  port: 80
+
+container:
+  port: 8080 
+  
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+resources: {}
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+# Adding GCS Fuse volume for bucket mounting
+volumes:
+  - name: gcs-bucket
+    csi:
+      driver: gcsfuse.csi.storage.gke.io
+      readOnly: false
+      volumeAttributes:
+        bucketName: ""  # Will be dynamically set by Terraform
+        mountOptions: "implicit-dirs"
+
+# Mounting GCS Fuse volume
+volumeMounts:
+  - name: gcs-bucket
+    mountPath: /mnt/gcs
+    readOnly: false
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Additional configuration to be set dynamically by Terraform
+config:
+  namespace: ""  # Namespace from Terraform
+  ksa: ""  # Kubernetes Service Account from Terraform
+  bucketName: ""  # GCS Bucket Name from Terraform
+
