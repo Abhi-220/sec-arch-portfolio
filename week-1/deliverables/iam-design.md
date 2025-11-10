@@ -32,8 +32,7 @@ Organization: my-org
 ├── Project: monitoring
 └── Project: automation
 
-pgsql
-Copy code
+
 
 ### Design Rationale
 - **Environment-based folders** ensure strong policy and access segregation between prod, staging, and shared services.
@@ -97,17 +96,17 @@ Two types exist — **predefined** and **custom** — each serving different con
   ]
 }
 
-4. Service Account Design
-Principle
-Each Service Account (SA) represents a machine identity, following least-privilege and single-purpose usage.
 
-Service Account	Purpose	Scope	Notes
-tf-admin@infra-project.iam.gserviceaccount.com	Terraform provisioning	Project	Used via impersonation or WIF; no static key
-app-sa@apps-project.iam.gserviceaccount.com	Application runtime	Project	Limited to secrets, logging, and GCS
-monitor-sa@monitoring-project.iam.gserviceaccount.com	Monitoring & logging	Shared Services	MetricWriter + LogWriter
-automation-sa@shared-services.iam.gserviceaccount.com	CI/CD automation	Shared Services	Used by Cloud Build or GitHub Actions via WIF
+| Service Account                                         | Purpose                | Scope           | Notes                                         |
+| ------------------------------------------------------- | ---------------------- | --------------- | --------------------------------------------- |
+| `tf-admin@infra-project.iam.gserviceaccount.com`        | Terraform provisioning | Project         | Used via impersonation or WIF; no static key  |
+| `app-sa@apps-project.iam.gserviceaccount.com`           | Application runtime    | Project         | Limited to secrets, logging, and GCS          |
+| `monitor-sa@monitoring-project.iam.gserviceaccount.com` | Monitoring & logging   | Shared Services | MetricWriter + LogWriter                      |
+| `automation-sa@shared-services.iam.gserviceaccount.com` | CI/CD automation       | Shared Services | Used by Cloud Build or GitHub Actions via WIF |
+
 
 Security Controls
+
 No static keys. JSON keys are prohibited unless justified and tracked.
 
 Impersonation and federation only.
@@ -119,6 +118,7 @@ External CI/CD (GitHub, Jenkins) use Workload Identity Federation (WIF) for keyl
 Dedicated service accounts per function — no reuse across environments.
 
 Example WIF Policy
+
 Terraform in GitHub Actions:
 
 permissions:
@@ -130,17 +130,19 @@ steps:
     with:
       workload_identity_provider: "projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github"
       service_account: "tf-admin@infra-project.iam.gserviceaccount.com"
+
+
 Result → short-lived token; no permanent key exposure.
 
-5. Access Model
-   
-Group / Identity	Scope	Typical Roles	Description
-Org Admins	Org	roles/resourcemanager.organizationAdmin, roles/iam.securityAdmin	Full governance control
-Security Team	Org / Folder	roles/securitycenter.admin, custom security roles	Posture management & compliance
-Infra Admins	Folder (Prod/Staging)	roles/editor, network admin	Build and maintain resources
-Developers	Project	Custom or predefined deploy roles	Limited access to own projects
-Auditors	Org	roles/viewer, roles/logging.viewer	Read-only monitoring & compliance
-Service Accounts	Project	Custom least-privilege	Machine access for automation
+| Group / Identity     | Scope                 | Typical Roles                                                        | Description                       |
+| -------------------- | --------------------- | -------------------------------------------------------------------- | --------------------------------- |
+| **Org Admins**       | Org                   | `roles/resourcemanager.organizationAdmin`, `roles/iam.securityAdmin` | Full governance control           |
+| **Security Team**    | Org / Folder          | `roles/securitycenter.admin`, custom security roles                  | Posture management & compliance   |
+| **Infra Admins**     | Folder (Prod/Staging) | `roles/editor`, network admin                                        | Build and maintain resources      |
+| **Developers**       | Project               | Custom or predefined deploy roles                                    | Limited access to own projects    |
+| **Auditors**         | Org                   | `roles/viewer`, `roles/logging.viewer`                               | Read-only monitoring & compliance |
+| **Service Accounts** | Project               | Custom least-privilege                                               | Machine access for automation     |
+
 
 Principles enforced:
 
@@ -152,6 +154,7 @@ Folder-level policy boundaries: Prod isolation enforced via IAM conditions.
 
 6. Authentication & Key Management
 6.1 Allowed Authentication Methods
+
 Workload Identity Federation (WIF) for external automation.
 
 Service Account Impersonation for internal tools (Cloud Build, GCE).
@@ -159,6 +162,7 @@ Service Account Impersonation for internal tools (Cloud Build, GCE).
 OAuth 2.0 User Authentication for administrators via SSO.
 
 6.2 Forbidden Practices
+
 Static JSON keys for Terraform or automation.
 
 Shared service accounts between users or pipelines.
@@ -166,24 +170,27 @@ Shared service accounts between users or pipelines.
 Long-lived credentials without rotation.
 
 6.3 Monitoring
-Cloud Logging Filter for key creation:
 
+Cloud Logging Filter for key creation:
 
 protoPayload.serviceName="iam.googleapis.com"
 protoPayload.methodName="google.iam.admin.v1.CreateServiceAccountKey"
+
 → Alerts security team on new key creation.
 
-7. Governance & Review
-Control	Frequency	Owner	Description
-IAM Audit Review	Quarterly	Security Team	Review role bindings and unused permissions
-Key Scan	Continuous	Security Bot	Detect static key creation via logs
-Role Registry	Ongoing	Platform Team	Maintain versioned custom roles in Git
-Policy Simulator Tests	On-demand	DevOps	Validate IAM changes pre-deployment
+| Control                | Frequency  | Owner         | Description                                 |
+| ---------------------- | ---------- | ------------- | ------------------------------------------- |
+| IAM Audit Review       | Quarterly  | Security Team | Review role bindings and unused permissions |
+| Key Scan               | Continuous | Security Bot  | Detect static key creation via logs         |
+| Role Registry          | Ongoing    | Platform Team | Maintain versioned custom roles in Git      |
+| Policy Simulator Tests | On-demand  | DevOps        | Validate IAM changes pre-deployment         |
+
 
 Versioning convention:
 custom.RoleName_v1, increment on permission change.
 
 8. Security Architecture Philosophy
+
 "Access is not granted; it is earned, reviewed, and expired."
 
 This IAM framework follows a Zero Trust mindset:
@@ -205,16 +212,3 @@ Keyless operations (impersonation/WIF),
 Audit-driven governance.
 
 This forms the IAM baseline for a secure, scalable, and audit-ready GCP environment.
-
-Author: Abhishek
-Track: Security Architect Mastery — Week 1 Deliverable
-Document: week-1/deliverables/iam-design.md
-
-
----
-
-### 🧠 Notes:
-This version:
-- Includes your stance on **predefined vs custom roles** (simplicity + security balance).  
-- Integrates **service account impersonation & WIF** to eliminate key-based access.  
-- Keeps hierarchy **environment-first**, respecting your reasoning. 
